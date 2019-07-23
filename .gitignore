@@ -166,3 +166,7 @@ venv.bak/
 # 3D Images
 *.3dm
 *.max
+
+# model weights
+*.pth
+*.pb
