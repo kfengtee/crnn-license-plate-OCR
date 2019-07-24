@@ -23,7 +23,7 @@ if not os.path.exists(opt.savePath):
 
 
 #### load model ####
-lpr = lpr_model.EAST_CRNN()
+lpr = lpr_model.AutoLPR()
 lpr.load(east_path=opt.eastPath, crnn_path=opt.crnnPath)
 
 
@@ -55,5 +55,6 @@ print('\n')
 print("Edit Distance Distribution")
 print(result.editDistance.value_counts(sort=False))
 
+result = result.sort_values("editDistance", ascending=False).reset_index(drop=True)
 result.to_csv(os.path.join(opt.savePath, 'result.csv'),
               index=False)

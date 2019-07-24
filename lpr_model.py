@@ -48,7 +48,7 @@ def crnn_predict(crnn, img, transformer):
         
     return output
 
-class EAST_CRNN:
+class AutoLPR:
     
     def __init__(self):
         
@@ -65,8 +65,8 @@ class EAST_CRNN:
         # east parameters
         self.layerNames = ["feature_fusion/Conv_7/Sigmoid", "feature_fusion/concat_3"]
         self.min_conf = 0.95
-        self.img_width = 320
-        self.img_height = 160
+#         self.img_width = 320
+#         self.img_height = 160
         
         # prediction parameters
 #         self.num_top_results = 5
