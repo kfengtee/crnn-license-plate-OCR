@@ -167,6 +167,6 @@ venv.bak/
 *.3dm
 *.max
 
-# model weights
-*.pth
-*.pb
+# # model weights
+# *.pth
+# *.pb
