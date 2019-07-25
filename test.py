@@ -1,4 +1,4 @@
-import lpr_model
+import lpr
 import argparse
 import os
 import pandas as pd
@@ -9,12 +9,7 @@ from sklearn.metrics import accuracy_score
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataPath', required=True, help='path to training dataset')
 parser.add_argument('--savePath', required=True, help='path to save results')
-parser.add_argument('--eastPath', type=str, 
-                    default="model_weights/frozen_east_text_detection.pb",
-                    help='path to pre-trained EAST model')
-parser.add_argument('--crnnPath', type=str, 
-                    default="model_weights/CRNN30.pth",
-                    help='path to pre-trained CRNN model')
+parser.add_argument('--crnnPath', required=True, help='path to pre-trained CRNN model')
 opt = parser.parse_args()
 print(opt)
 
@@ -23,8 +18,8 @@ if not os.path.exists(opt.savePath):
 
 
 #### load model ####
-lpr = lpr_model.AutoLPR()
-lpr.load(east_path=opt.eastPath, crnn_path=opt.crnnPath)
+lpr = lpr.AutoLPR()
+lpr.load(crnn_path=opt.crnnPath)
 
 
 #### test performance ####

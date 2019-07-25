@@ -1,6 +1,6 @@
 import argparse
 import utils
-import crnn_model 
+import model 
 
 import random
 import os
@@ -130,7 +130,7 @@ def weights_init(m):
         m.bias.data.fill_(0)
         
 # CRNN(imgH, nc, nclass, num_hidden(LSTM))
-crnn = crnn_model.CRNN(IMGH, nc, nclass, 256)
+crnn = model.CRNN(IMGH, nc, nclass, 256)
 crnn = torch.nn.DataParallel(crnn, range(1))
 
 if PRE_TRAINED_PATH is not None:
@@ -244,11 +244,11 @@ for epoch in range(EPOCH):
         cost = trainBatch(crnn, criterion, optimizer)
         loss_avg.add(cost)
         i += 1
-        if (i + 1) % display_iter == 0 :
+        if i% display_iter == 0 :
             # print training loss and validation loss
             print('[%d/%d][%d/%d] Train Loss: %f  Validation Loss: %f' %
                   (epoch, 30, i, len(train_loader), loss_avg.val(), 
                    validation(crnn, val_set, criterion)))
             loss_avg.reset()
-            torch.save(crnn.state_dict(), 
-                       'experiments/netCRNN_{0}_{1}.pth'.format(epoch, i))   
+            torch.save(crnn.state_dict(),
+                       os.path.join(opt.savePath, 'netCRNN_{0}_{1}.pth'.format(epoch, i)))   
