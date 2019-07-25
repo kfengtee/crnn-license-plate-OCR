@@ -19,13 +19,21 @@ with open('prior.pkl', 'rb') as f:
     
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def crnn_predict(crnn, img, transformer):
+def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False):
     """
+    Params
+    ------
+    crnn: torch.nn
+        Neural network architecture
+    transformer: torchvision.transform
+        Image transformer
+    decoder: string, 'bestPath' or 'beamSearch'
+        CTC decoder method.
+    
     Returns
     ------
     out: a list of tuples (predicted alphanumeric sequence, confidence level)
     """
-    output = []
     
     classes = string.ascii_uppercase + string.digits
     image = img.copy()
@@ -40,16 +48,25 @@ def crnn_predict(crnn, img, transformer):
     preds_np = np.hstack([preds_np[:, 1:], preds_np[:, [0]]])
     
     preds_sm = softmax(preds_np, axis=1)
-    preds_sm = np.divide(preds_sm, prior)
+#     preds_sm = np.divide(preds_sm, prior)
     
-    output = utils.ctcBestPath(preds_sm, classes)
-#     output = utils.ctcBeamSearch(preds_sm, classes, None)
+    if decoder == 'bestPath':
+        # normalise is only suitable for best path
+        if normalise == True:
+            preds_sm = np.divide(preds_sm, prior)
+        output = utils.ctcBestPath(preds_sm, classes)
+        
+    elif decoder == 'beamSearch':
+        output = utils.ctcBeamSearch(preds_sm, classes, None)
+    else:
+        raise Exception("Invalid decoder method. \
+                        Choose either 'bestPath' or 'beamSearch'")
         
     return output
 
 class AutoLPR:
     
-    def __init__(self):
+    def __init__(self, decoder='bestPath', normalise=False):
         
         # crnn parameters
         self.IMGH = 32
@@ -58,24 +75,27 @@ class AutoLPR:
         self.nclass = len(alphabet) + 1
         self.transformer = transforms.Compose([
             transforms.Grayscale(),  
-            transforms.Resize(32),
+            transforms.Resize((self.IMGH, 128)),
             transforms.ToTensor()])
+        self.decoder = decoder
+        self.normalise = normalise
         
                 
     def load(self, crnn_path):
 
         # load CRNN
         self.crnn = model.CRNN(self.IMGH, self.nc, self.nclass, nh=256).to(device)
-        self.crnn = torch.nn.DataParallel(self.crnn, range(1))
+#         self.crnn = torch.nn.DataParallel(self.crnn, range(1))
         
         self.crnn.load_state_dict(torch.load(crnn_path, map_location=device))
         
-        self.crnn.eval()  # remember to set to test mode (otherwise some layers might behave differently)
+        # remember to set to test mode (otherwise some layers might behave differently)
+        self.crnn.eval()
         
     def predict(self, img_path):
         
         # image processing for crnn
         self.image = Image.open(img_path)
         
-        return crnn_predict(self.crnn, self.image, self.transformer)
+        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise)
     

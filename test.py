@@ -10,6 +10,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataPath', required=True, help='path to training dataset')
 parser.add_argument('--savePath', required=True, help='path to save results')
 parser.add_argument('--crnnPath', required=True, help='path to pre-trained CRNN model')
+parser.add_argument('--ctcDecoder', type=str, default='bestPath', 
+                    choices=['bestPath', 'beamSearch'],
+                    help='method for decoding ctc outputs')
+
+parser.add_argument('--normalise', type=bool, default=False, 
+                    help='set true to normalise posterior probability.')
+
 opt = parser.parse_args()
 print(opt)
 
@@ -18,7 +25,7 @@ if not os.path.exists(opt.savePath):
 
 
 #### load model ####
-lpr = lpr.AutoLPR()
+lpr = lpr.AutoLPR(decoder=opt.ctcDecoder, normalise=opt.normalise)
 lpr.load(crnn_path=opt.crnnPath)
 
 
