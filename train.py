@@ -36,9 +36,11 @@ parser.add_argument('--dataPath', required=True, help='path to training dataset'
 parser.add_argument('--savePath', required=True, help='path to save trained weights')
 parser.add_argument('--preTrainedPath', type=str, default=None,
                     help='path to pre-trained weights (incremental learning)')
-parser.add_argument('--seed', type=int, default=1234, help='reproduce experiement')
+parser.add_argument('--seed', type=int, default=8888, help='reproduce experiement')
 parser.add_argument('--worker', type=int, default=0, 
                     help='number of cores for data loading')
+parser.add_argument('--imgW', type=int, default=100)
+parser.add_argument('--lr', type=float, default=1e-1)
 opt = parser.parse_args()
 print(opt)
 
@@ -49,7 +51,7 @@ EPOCH = opt.epoch
 PATH_TRAIN = opt.dataPath
 PRE_TRAINED_PATH = opt.preTrainedPath
 IMGH = 32
-IMGW = 128
+IMGW = opt.imgW
 
 cudnn.benchmark = True
 
@@ -154,10 +156,12 @@ else:
     
 #### image and text (convert to tensor) ####
 image = torch.FloatTensor(BATCH_SIZE, 1, IMGH, IMGH).to(device)
-
 text = torch.IntTensor(BATCH_SIZE * 5)
 length = torch.IntTensor(BATCH_SIZE)
 
+image = Variable(image)
+test = Variable(text)
+length = Variable(length)
 
 #### decoder, loss function, batch loss ####
 converter = utils.strLabelConverter(classes)
@@ -166,7 +170,7 @@ criterion = CTCLoss().to(device)
 
 
 #### learning rate, lr scheduler, lr optimiser ####
-LR = 1e-1
+LR = opt.lr
 optimizer = optim.Adadelta(crnn.parameters(), lr=LR)
 T_max = len(train_loader) * EPOCH
 lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=LR/10)
@@ -262,7 +266,7 @@ def validation(net, dataset, criterion, max_iter=100):
 # 25000 * 0.8 (# of data) // 64 (bs) ~= 310 (iterations) 
 if __name__ == "__main__":
     save_iter = len(os.listdir(PATH_TRAIN)) * 0.8 // BATCH_SIZE
-    PRINT_ITER = save_iter / 2
+    PRINT_ITER = save_iter
     
     print("Checkpoint: Start training")
     for epoch in range(EPOCH):
