@@ -50,10 +50,11 @@ def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False):
     preds_sm = softmax(preds_np, axis=1)
 #     preds_sm = np.divide(preds_sm, prior)
     
+    # normalise is only suitable for best path
+    if normalise == True:
+        preds_sm = np.divide(preds_sm, prior)
+            
     if decoder == 'bestPath':
-        # normalise is only suitable for best path
-        if normalise == True:
-            preds_sm = np.divide(preds_sm, prior)
         output = utils.ctcBestPath(preds_sm, classes)
         
     elif decoder == 'beamSearch':
@@ -75,7 +76,7 @@ class AutoLPR:
         self.nclass = len(alphabet) + 1
         self.transformer = transforms.Compose([
             transforms.Grayscale(),  
-            transforms.Resize((self.IMGH, 128)),
+            transforms.Resize(self.IMGH),
             transforms.ToTensor()])
         self.decoder = decoder
         self.normalise = normalise
