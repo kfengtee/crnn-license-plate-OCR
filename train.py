@@ -57,7 +57,12 @@ PATH_TRAIN = opt.dataPath
 PRE_TRAINED_PATH = opt.preTrainedPath
 IMGH = 32
 
-## Note:crnn output length = img_width / 4 + 1
+## Feature: Char Resizing ##
+# 1. IMGW (const): Uncomment formula
+# 2. LPDataSet __getitem__ (class method): Uncomment PIL resize
+# 3. train_transformer (torchvision): Uncomment transform.Resize
+
+# Note:crnn output length = img_width / 4 + 1
 # Assumption: 4 cuts per character
 # Calculation: 4 * maxCharLen = img_width / 4 + 1
 #             => img_width = 16 * maxCharLen - 4 
@@ -97,9 +102,6 @@ class LPDataset(Dataset):
             cv_idx: cross validation indices (training / validation sets)
             transform: (torchvision.transforms) transformation to apply on image
         """
-#         self.filenames = [os.listdir(path)[i] for i in cv_idx]
-#         self.filenames = [os.path.join(path, f) for f in self.filenames 
-#                           if f.endswith('.jpg')]
         self.path = path
         temp = os.listdir(path)
         self.dirs = [temp[i] for i in cv_idx]
