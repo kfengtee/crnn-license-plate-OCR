@@ -1,4 +1,4 @@
-import lpr
+import model.alpr as alpr
 import argparse
 import os
 import pandas as pd
@@ -25,7 +25,7 @@ if not os.path.exists(opt.savePath):
 
 
 #### load model ####
-lpr = lpr.AutoLPR(decoder=opt.ctcDecoder, normalise=opt.normalise)
+lpr = alpr.AutoLPR(decoder=opt.ctcDecoder, normalise=opt.normalise)
 lpr.load(crnn_path=opt.crnnPath)
 
 

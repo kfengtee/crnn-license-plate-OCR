@@ -1,6 +1,6 @@
 import argparse
-import utils
-import model 
+import model.utils as utils
+import model.crnn as crnn
 
 import random
 import os
@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score
 from torch_baidu_ctc import CTCLoss
 
 from PIL import Image, ImageOps
-from invert import Invert
+# from invert import Invert
 
 import warnings
 import sys
@@ -167,7 +167,7 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 # CRNN(imgH, nc, nclass, num_hidden(LSTM))
-crnn = model.CRNN(IMGH, nc, nclass, 256).to(device)
+crnn = crnn.CRNN(IMGH, nc, nclass, 256).to(device)
 print("Checkpoint: Model loaded")
 
 if torch.cuda.device_count() > 1:
@@ -193,7 +193,6 @@ length = Variable(length)
 converter = utils.strLabelConverter(classes)
 loss_avg = utils.averager()
 criterion = CTCLoss().to(device)
-
 
 #### learning rate, lr scheduler, lr optimiser ####
 LR = opt.lr
