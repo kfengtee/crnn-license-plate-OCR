@@ -21,6 +21,9 @@ from sklearn.metrics import accuracy_score
 
 from torch_baidu_ctc import CTCLoss
 
+from PIL import Image, ImageOps
+from invert import Invert
+
 import warnings
 import sys
 if not sys.warnoptions:
@@ -39,8 +42,10 @@ parser.add_argument('--preTrainedPath', type=str, default=None,
 parser.add_argument('--seed', type=int, default=8888, help='reproduce experiement')
 parser.add_argument('--worker', type=int, default=0, 
                     help='number of cores for data loading')
-parser.add_argument('--imgW', type=int, default=100)
+# parser.add_argument('--imgW', type=int, default=100)
 parser.add_argument('--lr', type=float, default=1e-1)
+parser.add_argument('--maxLength', type=int, default=9, 
+                    help='maximum license plate character length in data')
 opt = parser.parse_args()
 print(opt)
 
@@ -51,7 +56,13 @@ EPOCH = opt.epoch
 PATH_TRAIN = opt.dataPath
 PRE_TRAINED_PATH = opt.preTrainedPath
 IMGH = 32
-IMGW = opt.imgW
+
+## Note:crnn output length = img_width / 4 + 1
+# Assumption: 4 cuts per character
+# Calculation: 4 * maxCharLen = img_width / 4 + 1
+#             => img_width = 16 * maxCharLen - 4 
+# IMGW = opt.maxLength * 16 - 4
+IMGW = 100
 
 cudnn.benchmark = True
 
@@ -67,6 +78,7 @@ if not os.path.exists(opt.savePath):
 #### data preparation & loading ####
 train_transformer = transforms.Compose([
     transforms.Grayscale(),  
+#     transforms.RandomApply([Invert()], p=0.3), # taxi license plate
     transforms.Resize((IMGH,IMGW)),
     transforms.ToTensor()])  # transform it into a torch tensor
 
@@ -85,17 +97,21 @@ class LPDataset(Dataset):
             cv_idx: cross validation indices (training / validation sets)
             transform: (torchvision.transforms) transformation to apply on image
         """
-        self.filenames = [os.listdir(path)[i] for i in cv_idx]
-        self.filenames = [os.path.join(path, f) for f in self.filenames 
-                          if f.endswith('.jpg')]
-
-        self.labels = [filename.split('/')[-1].split('_')[-1].split('.')[0] 
-                       for filename in self.filenames]
+#         self.filenames = [os.listdir(path)[i] for i in cv_idx]
+#         self.filenames = [os.path.join(path, f) for f in self.filenames 
+#                           if f.endswith('.jpg')]
+        self.path = path
+        temp = os.listdir(path)
+        self.dirs = [temp[i] for i in cv_idx]
+    
+        filenames = [os.path.splitext(directory)[0] for directory in self.dirs]
+        
+        self.labels = [file_name.split('_')[-1] for file_name in filenames]
         self.transform = transform
 
     def __len__(self):
         # return size of dataset
-        return len(self.filenames)
+        return len(self.dirs)
 
     def __getitem__(self, idx):
         """
@@ -109,18 +125,26 @@ class LPDataset(Dataset):
             image: (Tensor) transformed image
             label: corresponding label of image
         """
-        image = Image.open(self.filenames[idx])  # PIL image
+        image = Image.open(os.path.join(self.path, self.dirs[idx]))  # PIL image
+#         image = image.resize((16 * len(self.labels[idx]) - 4, IMGH))
+
+#         if image.size[0] < IMGW:
+#             image = ImageOps.expand(image, (0, 0, (IMGW - image.size[0]), 0), 
+#                                   fill='black')
+#         elif image.size[0] > IMGW:
+#             raise Exception("Invalid --maxLength")
+        
         image = self.transform(image)
         return image, self.labels[idx]
     
 n = range(len(os.listdir(PATH_TRAIN)))
-train_idx, val_idx = train_test_split(n, train_size=0.8, random_state=opt.seed)
+train_idx, val_idx = train_test_split(n, train_size=0.8, test_size=0.2, random_state=opt.seed)
 
 # train data
 print("Checkpoint: Loading data")
 train_loader = DataLoader(LPDataset(PATH_TRAIN, train_idx, train_transformer), 
                           batch_size=BATCH_SIZE, num_workers = opt.worker, 
-                          shuffle=True)
+                          shuffle=True, pin_memory=True)
 print("Checkpoint: Data loaded")
 
 # validation data
@@ -172,8 +196,8 @@ criterion = CTCLoss().to(device)
 #### learning rate, lr scheduler, lr optimiser ####
 LR = opt.lr
 optimizer = optim.Adadelta(crnn.parameters(), lr=LR)
-T_max = len(train_loader) * EPOCH
-lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=LR/10)
+# T_max = len(train_loader) * EPOCH
+# lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=LR/10)
 
 
 def trainBatch(net, criterion, optimizer):
@@ -190,10 +214,10 @@ def trainBatch(net, criterion, optimizer):
     
     cost = criterion(preds, text, preds_size, length) / batch_size
     
-    crnn.zero_grad()
+    optimizer.zero_grad()
     cost.backward()
     optimizer.step()
-    lr_scheduler.step()
+#     lr_scheduler.step()
     
     return cost
 
