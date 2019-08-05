@@ -1,0 +1,13 @@
+editdistance==0.5.3
+matplotlib==3.0.3
+numpy==1.16.2
+opencv-python==4.1.0.25
+pandas==0.24.2
+Pillow==5.4.1
+scikit-image==0.14.2
+scikit-learn==0.20.3
+scipy==1.2.1
+torch==1.1.0
+torch-baidu-ctc==0.3.0
+torchvision==0.3.0
+
