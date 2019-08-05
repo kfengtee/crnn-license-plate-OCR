@@ -86,10 +86,8 @@ class AutoLPR:
 
         # load CRNN
         self.crnn = crnn.CRNN(self.IMGH, self.nc, self.nclass, nh=256).to(device)
-#         self.crnn = torch.nn.DataParallel(self.crnn, range(1))
-        
         self.crnn.load_state_dict(torch.load(crnn_path, map_location=device))
-        
+            
         # remember to set to test mode (otherwise some layers might behave differently)
         self.crnn.eval()
         
