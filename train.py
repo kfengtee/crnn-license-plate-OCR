@@ -1,5 +1,5 @@
 import argparse
-import model.utils as utils
+import utils
 import model.crnn as crnn
 
 import random
@@ -315,5 +315,12 @@ if __name__ == "__main__":
                 loss_avg.reset()
 
             if i % save_iter == 0 :
-                torch.save(crnn.state_dict(),
-                           os.path.join(opt.savePath, 'netCRNN_{}_{}.pth'.format(epoch + 1, i + 1)))   
+                
+                try:
+                    state_dict = crnn.module.state_dict()
+                except AttributeError:
+                    state_dict = crnn.state_dict()
+                    
+                torch.save(state_dict,
+                           os.path.join(opt.savePath,
+                                        'netCRNN_{}_{}.pth'.format(epoch + 1, i + 1)))
