@@ -169,4 +169,7 @@ venv.bak/
 
 # # model weights
 # *.pth
-# *.pb
+*.pb
+
+# spreadsheets
+*.csv
